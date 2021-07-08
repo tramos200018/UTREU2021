@@ -1,6 +1,7 @@
 import numpy as np
 import scipy
 from scipy import integrate
+import xarray as xr
 import json
 import argparse
 import matplotlib.pyplot as plt
@@ -40,6 +41,7 @@ def validate_params(param_dict, float_keys, int_keys, str_keys):
         if type(param_dict[key]) != str:
             raise ValueError('Parameter {} is not specified as a string.'.format(key))
 
+
 # ----------------------------------------------------------------------------------------------
 # -- define the system of differential equations
 # ----------------------------------------------------------------------------------------------
@@ -62,8 +64,21 @@ class SEIR:
         self.outdir = outdir
         self.R = [self.start_S, self.start_E, self.start_I, self.start_R]
         
-        self.N = start_S + start_E + start_I + start_R
-
+    @property
+    def results_xr(self) -> xr.DataArray:
+        if hasattr(self, '_results_xr'):
+            return self._results_xr
+        elif hasattr(self, 'results'):
+            assert isinstance(self.results, np.ndarray)
+            # convert to DataArray
+            self._results_xr = xr.DataArray(
+                self.results, dims=('time', 'compartment'),
+                coords=dict(compartment=['S', 'E', 'I', 'R'])
+            )
+            return self._results_xr
+        else:
+            raise TypeError(f"could not find attribute `results`. Please run " + 
+                            "`integrate` method first")
 
     def seir(self, x, t):
 
@@ -87,11 +102,12 @@ class SEIR:
     def integrate(self):
 
         time = np.arange(0, self.duration, 0.01)
-        results = scipy.integrate.odeint(self.seir, self.R, time)
+        self.results = scipy.integrate.odeint(self.seir, self.R, time)
+        return self.results
 
-        return results
+    def plot_timeseries(self):
 
-    def plot_timeseries(self, results):
+        results = self.results
 
         time = np.arange(0, len(results[:, 1]))
 
@@ -110,6 +126,45 @@ class SEIR:
         plt.savefig(os.path.join(self.outdir, 'SEIR_Model.png'))
         plt.show()
 
+    def plot_xr(self):
+        """Plot results with different subplots for each compartment. Ref
+        https://matplotlib.org/devdocs/gallery/subplots_axes_and_figures/subplots_demo.html
+        """
+        # get compartment labels/coords
+        compartments = self.results_xr.coords['compartment'].to_series()
+
+        # number of rows and cols of subplots
+        subplot_rows, subplot_cols = 2, 2
+        assert subplot_rows * subplot_cols == len(compartments)
+
+        # instantiate a matplotlib plot, with one subplot for each compartment
+        fig, axs = plt.subplots(subplot_rows, subplot_cols)
+        fig.suptitle('Compartment Population vs Time')
+
+        # set x data
+        x = self.results_xr.coords['time']
+
+        # for each compartment, get the y data
+        for i, compartment in enumerate(compartments):
+            print(f"{i=}, {compartment=}")
+            # set y data
+            y = self.results_xr.loc[{'compartment': compartment}]
+            subplot = axs[i // subplot_rows, i % subplot_cols]
+            # plot y vs x
+            subplot.plot(x, y)
+            # set title of subplot
+            subplot.set_title(f'{compartment=}')
+
+        # breakpoint()
+        plt.show()
+
+    def plot_example(self):
+        fig, axs = plt.subplots(2)
+        fig.suptitle('Vertically stacked subplots')
+        axs[0].plot(x, y)
+        axs[1].plot(x, -y)
+
+
 def main(opts):
 
     # ----- Load and validate parameters -----#
@@ -124,8 +179,9 @@ def main(opts):
     # ----- Run model if inputs are valid -----#
 
     seir_model = SEIR(**pars)
-    r = seir_model.integrate()
-    seir_model.plot_timeseries(r)
+    seir_model.integrate()
+    # seir_model.plot_timeseries()
+    seir_model.plot_xr()
 
 if __name__ == '__main__':
 
