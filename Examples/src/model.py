@@ -207,6 +207,14 @@ def main(opts):
 
     # ----- Load and validate parameters -----#
 
+    '''
+    This works, but what if someone wants to pass a different file path
+    for their CSV file? The argparse module is good for this: it allows the
+    user to pass command line arguments. --paramfile is already implemented by
+    Kelly, and is passed to this function through the `opts` argument.
+    
+    I would like you to do is add command line options for the CSV file as well.
+    '''
     pop = get_population("../data/AustinFacts.csv")
     pars = acquire_params("../inputs/params_pop_sizes.json")
 
