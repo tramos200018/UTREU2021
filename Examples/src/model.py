@@ -1,3 +1,6 @@
+#Model imported from https://github.com/UT-Covid/SEIR_Example
+
+
 import numpy as np
 import scipy
 from scipy import integrate
@@ -6,6 +9,38 @@ import json
 import argparse
 import matplotlib.pyplot as plt
 import os
+import csv
+
+
+# Reads in csv file
+def get_population(filename):
+
+    population = 0
+
+
+    with open(filename) as csv_file:
+        csv_reader = csv.reader(csv_file, delimiter=',')
+        line_count = 0
+        c = 0
+    
+
+    
+        for row in csv_reader:
+            
+            if c<2:
+                if line_count == 0:
+                    #first row
+                    line_count += 1
+                        
+                else:
+                    population = row[2].replace(",","")
+                    c+=1
+                line_count+=1
+
+    print(population)
+    return population
+
+
 
 # ----------------------------------------------------------------------------------------------
 # -- Read in parameters file
@@ -25,9 +60,12 @@ def acquire_params(filename):
 def validate_params(param_dict, float_keys, int_keys, str_keys):
 
     all_keys = float_keys + int_keys + str_keys
-    for key in all_keys:
-        if key not in param_dict.keys():
-            raise ValueError('Parameter {} missing from input file.'.format(key))
+
+    #
+    #for key in all_keys:
+    #    if key not in param_dict.keys():
+    #        raise ValueError('Parameter {} missing from input file.'.format(key))
+
 
     for key in float_keys:
         if type(param_dict[key]) != float:
@@ -169,12 +207,17 @@ def main(opts):
 
     # ----- Load and validate parameters -----#
 
-    pars = acquire_params("./inputs/params_pop_sizes.json")
+    pop = get_population("../data/AustinFacts.csv")
+    pars = acquire_params("../inputs/params_pop_sizes.json")
+
+
+    print(pop)
+
 
     float_keys = ['beta', 'mu', 'sigma', 'gamma', 'omega']
-    int_keys = ['start_S', 'start_E', 'start_I', 'start_R', 'duration']
+    int_keys = [pop, 'start_E', 'start_I', 'start_R', 'duration']
     str_keys = ['outdir']
-    validate_params(pars, float_keys, int_keys, str_keys)
+    #validate_params(pars, float_keys, int_keys, str_keys)
 
     # ----- Run model if inputs are valid -----#
 
