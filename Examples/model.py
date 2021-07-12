@@ -148,19 +148,43 @@ class SEIR:
         plt.savefig(os.path.join(self.outdir, 'SEIR_Model.png'))
         plt.show()
 
+    def plot(self, results):
+
+        time = np.arange(0, len(results[:, 1]))
+
+        fig, axs = plt.subplots(2, 2)
+        axs[0, 0].plot(time, results[:, 0])
+        axs[0, 0].set_title('S')
+        axs[0, 1].plot(time, results[:, 1], 'tab:orange')
+        axs[0, 1].set_title('E')
+        axs[1, 0].plot(time, results[:, 2], 'tab:green')
+        axs[1, 0].set_title('I')
+        axs[1, 1].plot(time, results[:, 3], 'tab:red')
+        axs[1, 1].set_title('R')
+
+        for ax in axs.flat:
+            ax.set(xlabel='Time', ylabel='Population')
+
+        # Hide x labels and tick labels for top plots and y ticks for right plots.
+        for ax in axs.flat:
+            ax.label_outer()
+
+        plt.savefig(os.path.join(self.outdir, 'SEIR_Model.png'))
+        plt.show()
+
 def main(opts):
 
     # ----- Load and validate parameters -----#
 
-    pop = get_population("../data/AustinFacts.csv")
-    pars = acquire_params("../inputs/params_pop_sizes.json")
+    pop = get_population("./data/AustinFacts.csv")
+    pars = acquire_params("./inputs/params_pop_sizes.json")
 
 
     print(pop)
 
 
     float_keys = ['beta', 'mu', 'sigma', 'gamma', 'omega']
-    int_keys = [pop, 'start_E', 'start_I', 'start_R', 'duration']
+    int_keys = ['start_S', 'start_E', 'start_I', 'start_R', 'duration']
     str_keys = ['outdir']
     #validate_params(pars, float_keys, int_keys, str_keys)
 
@@ -168,7 +192,7 @@ def main(opts):
 
     seir_model = SEIR(**pars)
     r = seir_model.integrate()
-    seir_model.plot_timeseries(r)
+    seir_model.plot(r)
 
 if __name__ == '__main__':
 
