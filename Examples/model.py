@@ -164,75 +164,51 @@ class SEIR:
         plt.savefig(os.path.join(self.outdir, 'SEIR_Model.png'))
         plt.show()
 
-    def plot_xr(self):
-        """Plot results with different subplots for each compartment. Ref
-        https://matplotlib.org/devdocs/gallery/subplots_axes_and_figures/subplots_demo.html
-        """
-        # get compartment labels/coords
-        compartments = self.results_xr.coords['compartment'].to_series()
+    def plot(self, results):
 
-        # number of rows and cols of subplots
-        subplot_rows, subplot_cols = 2, 2
-        assert subplot_rows * subplot_cols == len(compartments)
+        time = np.arange(0, len(results[:, 1]))
 
-        # instantiate a matplotlib plot, with one subplot for each compartment
-        fig, axs = plt.subplots(subplot_rows, subplot_cols)
-        fig.suptitle('Compartment Population vs Time')
+        fig, axs = plt.subplots(2, 2)
+        axs[0, 0].plot(time, results[:, 0])
+        axs[0, 0].set_title('S')
+        axs[0, 1].plot(time, results[:, 1], 'tab:orange')
+        axs[0, 1].set_title('E')
+        axs[1, 0].plot(time, results[:, 2], 'tab:green')
+        axs[1, 0].set_title('I')
+        axs[1, 1].plot(time, results[:, 3], 'tab:red')
+        axs[1, 1].set_title('R')
 
-        # set x data
-        x = self.results_xr.coords['time']
+        for ax in axs.flat:
+            ax.set(xlabel='Time', ylabel='Population')
 
-        # for each compartment, get the y data
-        for i, compartment in enumerate(compartments):
-            print(f"{i=}, {compartment=}")
-            # set y data
-            y = self.results_xr.loc[{'compartment': compartment}]
-            subplot = axs[i // subplot_rows, i % subplot_cols]
-            # plot y vs x
-            subplot.plot(x, y)
-            # set title of subplot
-            subplot.set_title(f'{compartment=}')
+        # Hide x labels and tick labels for top plots and y ticks for right plots.
+        for ax in axs.flat:
+            ax.label_outer()
 
-        # breakpoint()
+        plt.savefig(os.path.join(self.outdir, 'SEIR_Model.png'))
         plt.show()
-
-    def plot_example(self):
-        fig, axs = plt.subplots(2)
-        fig.suptitle('Vertically stacked subplots')
-        axs[0].plot(x, y)
-        axs[1].plot(x, -y)
-
 
 def main(opts):
 
     # ----- Load and validate parameters -----#
 
-    '''
-    This works, but what if someone wants to pass a different file path
-    for their CSV file? The argparse module is good for this: it allows the
-    user to pass command line arguments. --paramfile is already implemented by
-    Kelly, and is passed to this function through the `opts` argument.
-    
-    I would like you to do is add command line options for the CSV file as well.
-    '''
-    pop = get_population("../data/AustinFacts.csv")
-    pars = acquire_params("../inputs/params_pop_sizes.json")
+    pop = get_population("./data/AustinFacts.csv")
+    pars = acquire_params("./inputs/params_pop_sizes.json")
 
 
     print(pop)
 
 
     float_keys = ['beta', 'mu', 'sigma', 'gamma', 'omega']
-    int_keys = [pop, 'start_E', 'start_I', 'start_R', 'duration']
+    int_keys = ['start_S', 'start_E', 'start_I', 'start_R', 'duration']
     str_keys = ['outdir']
     #validate_params(pars, float_keys, int_keys, str_keys)
 
     # ----- Run model if inputs are valid -----#
 
     seir_model = SEIR(**pars)
-    seir_model.integrate()
-    # seir_model.plot_timeseries()
-    seir_model.plot_xr()
+    r = seir_model.integrate()
+    seir_model.plot(r)
 
 if __name__ == '__main__':
 
