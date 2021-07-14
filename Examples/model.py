@@ -9,6 +9,8 @@ import argparse
 import matplotlib.pyplot as plt
 import os
 import csv
+from scipy.optimize import least_squares
+
 
 
 # Reads in csv file
@@ -171,6 +173,22 @@ class SEIR:
 
         plt.savefig(os.path.join(self.outdir, 'SEIR_Model.png'))
         plt.show()
+
+    def fit_to_data(self):
+        y = np.zeros(4)
+
+        
+
+
+        y[0] = self.mu - ((((self.beta * I)) * S)) + (self.omega * R) - (self.mu * S)
+        y[1] = ((self.beta * S * I)) - (self.mu + self.sigma) * E
+        y[2] = (self.sigma * E) - (self.mu + self.gamma) * I
+        y[3] = (self.gamma * I) - (self.mu * R) - (self.omega * R)
+
+        x0_seir = np.array([2,2,2,2])
+        res_1 = least_squares(self.seir, x0_seir)
+
+        return res1.x
 
 def main(opts):
 
