@@ -125,10 +125,7 @@ class SEIR:
         return y
 
 
-    # mu = 0
-    # omega = .1
-    # sigma = .5
-    # gamma = .3
+    
     #self gets the coefficient variables, x is betta, and data is case data
     def function(self, x, data):
         return np.array([-(x*data[2]*data[0]) + (self.omega*data[3]), (x*data[0]*data[2]) - (self.sigma)*data[1], self.sigma*data[1] -  self.gamma*data[2], self.gamma*data[2] - self.omega*data[3]])
@@ -189,20 +186,8 @@ class SEIR:
         plt.show()
 
     def fit_to_data(self):
-        y = np.zeros(4)
-
-        
-
-
-        y[0] = self.mu - ((((self.beta * I)) * S)) + (self.omega * R) - (self.mu * S)
-        y[1] = ((self.beta * S * I)) - (self.mu + self.sigma) * E
-        y[2] = (self.sigma * E) - (self.mu + self.gamma) * I
-        y[3] = (self.gamma * I) - (self.mu * R) - (self.omega * R)
-
-        x0_seir = np.array([2,2,2,2])
-        res_1 = least_squares(self.seir, x0_seir)
-
-        return res1.x
+        ##try to fit data
+        x0 = np.array([.9])
 
 def main(opts):
 
@@ -227,8 +212,7 @@ def main(opts):
     seir_model.plot(r)
 
 
-    ##try to fit data
-    x0 = np.array([.9])
+    
 
 
 if __name__ == '__main__':
