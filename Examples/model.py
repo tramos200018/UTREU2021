@@ -124,6 +124,20 @@ class SEIR:
 
         return y
 
+
+    # mu = 0
+    # omega = .1
+    # sigma = .5
+    # gamma = .3
+    #self gets the coefficient variables, x is betta, and data is case data
+    def function(self, x, data):
+        return np.array([-(x*data[2]*data[0]) + (self.omega*data[3]), (x*data[0]*data[2]) - (self.sigma)*data[1], self.sigma*data[1] -  self.gamma*data[2], self.gamma*data[2] - self.omega*data[3]])
+
+    
+    #don't know how this would work, do I need to make 4 residuals for each compartment?
+    def residuals(self, y, x, data):
+        return data - function(self, x, data)
+    
     def integrate(self):
 
         time = np.arange(0, self.duration, 0.01)
@@ -211,6 +225,11 @@ def main(opts):
     seir_model = SEIR(**pars)
     r = seir_model.integrate()
     seir_model.plot(r)
+
+
+    ##try to fit data
+    x0 = np.array([.9])
+
 
 if __name__ == '__main__':
 
