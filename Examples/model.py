@@ -110,6 +110,8 @@ class SEIR:
         ##try to fit data
         x0 = np.array([.9])
 
+        
+
 
 #converts case data into numpy array
 def convert(filename):
@@ -239,7 +241,3 @@ if __name__ == '__main__':
 
 
 
-'''
-
-        
-'''
