@@ -30,7 +30,6 @@ class SEIR:
         self.outdir = outdir
         self.R = [self.start_S, self.start_E, self.start_I, self.start_R]
         
-        self.N = start_S + start_E + start_I + start_R
 
         if not os.path.isdir(self.outdir):
             self.outdir = '.'
@@ -55,28 +54,9 @@ class SEIR:
         return y
     
 
-    #self gets the coefficient variables, x is betta, and data is case data
-    def run_model(self, x, **params):
-        # have a parameter file as dict params
-        # arr = np.array([-(x*data[2]*data[0]) + (self.omega*data[3]), 
-        #                  (x*data[0]*data[2]) - (self.sigma)*data[1], self.sigma*data[1] -  self.gamma*data[2], self.gamma*data[2] - self.omega*data[3]])
-        # 
-        seir_model = SEIR(**params)
-        r = seir_model.integrate()
-        #seir_model.plot_model(r)
-
-
-        # keep
-        assert isinstance(cases_per_day, np.ndarray)
-        return cases_per_day
-
     
-    #don't know how this would work, do I need to make 4 residuals for each compartment?
-    def residuals(self, x, y, data):
-        """Calculates the residual error."""
-        empirical_data = data
-        # call convert function
-        return empirical_data - run_model(self, x, **params)
+    
+    
 
     def integrate(self):
 
@@ -85,15 +65,7 @@ class SEIR:
 
         return results
 
-    def plot(self, data):
-        time = np.arange(0, len(data))
-
-        plt.title("Cases Over Time") 
-        plt.xlabel("time") 
-        plt.ylabel("cases") 
-        plt.plot(time, data)
-        plt.savefig(os.path.join(self.outdir, 'cases.png'))
-        plt.show() 
+    
 
 
     def plot_model(self, results):
@@ -139,6 +111,9 @@ def convert(filename):
 
 
     return data
+
+
+
 
 
 
@@ -212,6 +187,46 @@ def validate_params(param_dict, float_keys, int_keys, str_keys):
 # -- define the system of differential equations
 # ----------------------------------------------------------------------------------------------
 
+def run_model(x, filename):
+    file = open(filename, "r")
+    json_object = json.load(file)
+    file.close()
+
+    json_object["beta"] = .91
+        
+    file = open(filename, "w")
+    json.dump(json_object, file)
+    file.close()
+
+
+    pars = acquire_params(filename)
+
+    seir_model = SEIR(**pars)
+    r = seir_model.integrate()
+    
+
+    #print(r)
+    cases_per_day = r[:,1]
+
+    
+    
+    return cases_per_day
+
+def residuals(self, x, y, data, filename):
+        """Calculates the residual error."""
+        empirical_data = data
+        # call convert function
+        return empirical_data - run_model(self, x, filename)
+
+def plot(data, outdir):
+        time = np.arange(0, len(data))
+
+        plt.title("Cases Over Time") 
+        plt.xlabel("time") 
+        plt.ylabel("cases") 
+        plt.plot(time, data)
+        plt.savefig(os.path.join(outdir, 'plot.png'))
+        plt.show() 
 
 def main(opts):
 
@@ -220,26 +235,37 @@ def main(opts):
     if opts['mode'] == 'single_run':
             
         pop = get_population(opts['pop_file'])
-        pars = acquire_params(opts['paramfile'])
 
+        file = open(opts['paramfile'], "r")
+        json_object = json.load(file)
+        file.close()
 
-        float_keys = ['beta', 'mu', 'sigma', 'gamma', 'omega']
-        int_keys = ['start_S', 'start_E', 'start_I', 'start_R', 'duration']
-        str_keys = ['outdir']
-        #validate_params(pars, float_keys, int_keys, str_keys)
+        json_object["start_S"] = pop
+        
+        file = open(opts['paramfile'], "w")
+        json.dump(json_object, file)
+        file.close()
 
-        # ----- Run model if inputs are valid -----#
-
-        seir_model = SEIR(**pars)
-        r = seir_model.integrate()
-        #seir_model.plot_model(r)
-
+        
         data = convert(opts['cases_file'])
 
         dates = data[:,0]
         new_reported = data[:,3]
 
-        seir_model.plot(new_reported)
+        ans = run_model(0.91, opts['paramfile'])
+        print(ans)
+
+        plot(ans, "./outputs")
+
+        #plot(new_reported, "./outputs")
+
+
+
+
+        
+
+
+        
 
 '''
     elif opts['mode'] == 'fit':
