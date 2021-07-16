@@ -192,7 +192,7 @@ def run_model(x, filename):
     json_object = json.load(file)
     file.close()
 
-    json_object["beta"] = .91
+    json_object["beta"] = x
         
     file = open(filename, "w")
     json.dump(json_object, file)
@@ -252,7 +252,7 @@ def main(opts):
         dates = data[:,0]
         new_reported = data[:,3]
 
-        ans = run_model(0.91, opts['paramfile'])
+        ans = run_model(.95, opts['paramfile'])
         print(ans)
 
         plot(ans, "./outputs")
