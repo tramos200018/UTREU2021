@@ -32,6 +32,9 @@ class SEIR:
         
         self.N = start_S + start_E + start_I + start_R
 
+        if not os.path.isdir(self.outdir):
+            self.outdir = '.'
+
     def seir(self, x, t):
 
         S = x[0]
