@@ -53,13 +53,16 @@ class SEIR:
     
 
     #self gets the coefficient variables, x is betta, and data is case data
-    def function(self, x, data):
-        return np.array([-(x*data[2]*data[0]) + (self.omega*data[3]), (x*data[0]*data[2]) - (self.sigma)*data[1], self.sigma*data[1] -  self.gamma*data[2], self.gamma*data[2] - self.omega*data[3]])
+    def run_model(self, x, data):
+        arr = np.array([-(x*data[2]*data[0]) + (self.omega*data[3]), 
+                         (x*data[0]*data[2]) - (self.sigma)*data[1], self.sigma*data[1] -  self.gamma*data[2], self.gamma*data[2] - self.omega*data[3]])
+        # breakpoint()
+        return arr
 
     
     #don't know how this would work, do I need to make 4 residuals for each compartment?
     def residuals(self, y, x, data):
-        return data - function(self, x, data)
+        return data - run_model(self, x, data)
     
     def integrate(self):
 
