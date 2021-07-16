@@ -199,10 +199,8 @@ def main(opts):
 
     # ----- Load and validate parameters -----#
 
-    pop = get_population("./data/AustinFacts.csv")
-    pars = acquire_params("./inputs/params_pop_sizes.json")
-
-
+    pop = get_population(opts['pop_file'])
+    pars = acquire_params(opts['paramfile'])
 
 
     float_keys = ['beta', 'mu', 'sigma', 'gamma', 'omega']
@@ -216,7 +214,7 @@ def main(opts):
     r = seir_model.integrate()
     #seir_model.plot_model(r)
 
-    data = convert("./data/Austin_Travis_County_COVID19_Daily_Counts_(Public_View).csv")
+    data = convert(opts['cases_file'])
 
     dates = data[:,0]
     new_reported = data[:,3]
@@ -230,16 +228,16 @@ def main(opts):
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('-p', '--paramfile', help='Path to parameters file.')
+    parser.add_argument('-p', '--paramfile', help='Path to parameters file.',
+                        default="./inputs/params_pop_sizes.json")
+    parser.add_argument('--pop-file', help='Path to population CSV',
+                        default="./data/AustinFacts.csv")
+    parser.add_argument('--cases-file', help='Path to cases CSV (Johns Hopkins formatting)', 
+                        default="./data/Austin_Travis_County_COVID19_Daily_Counts_(Public_View).csv")
 
-    opts = parser.parse_args()
+
+
+
+    opts = vars(parser.parse_args())
 
     main(opts)
-
-
-
-
-'''
-
-        
-'''
