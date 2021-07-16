@@ -56,17 +56,28 @@ class SEIR:
     
 
     #self gets the coefficient variables, x is betta, and data is case data
-    def run_model(self, x, data):
-        arr = np.array([-(x*data[2]*data[0]) + (self.omega*data[3]), 
-                         (x*data[0]*data[2]) - (self.sigma)*data[1], self.sigma*data[1] -  self.gamma*data[2], self.gamma*data[2] - self.omega*data[3]])
-        # breakpoint()
-        return arr
+    def run_model(self, x, **params):
+        # have a parameter file as dict params
+        # arr = np.array([-(x*data[2]*data[0]) + (self.omega*data[3]), 
+        #                  (x*data[0]*data[2]) - (self.sigma)*data[1], self.sigma*data[1] -  self.gamma*data[2], self.gamma*data[2] - self.omega*data[3]])
+        # 
+        seir_model = SEIR(**params)
+        r = seir_model.integrate()
+        #seir_model.plot_model(r)
+
+
+        # keep
+        assert isinstance(cases_per_day, np.ndarray)
+        return cases_per_day
 
     
     #don't know how this would work, do I need to make 4 residuals for each compartment?
-    def residuals(self, y, x, data):
-        return data - run_model(self, x, data)
-    
+    def residuals(self, x, y, data):
+        """Calculates the residual error."""
+        empirical_data = data
+        # call convert function
+        return empirical_data - run_model(self, x, **params)
+
     def integrate(self):
 
         time = np.arange(0, self.duration, 0.01)
@@ -112,6 +123,8 @@ class SEIR:
     def fit_to_data(self):
         ##try to fit data
         x0 = np.array([.9])
+        params = dict()
+        # call to scipy.optimize.least_squares(fun=self.residual, extra_params=params)
 
 
 #converts case data into numpy array
@@ -202,28 +215,34 @@ def main(opts):
 
     # ----- Load and validate parameters -----#
 
-    pop = get_population(opts['pop_file'])
-    pars = acquire_params(opts['paramfile'])
+    if opts['mode'] == 'single_run':
+            
+        pop = get_population(opts['pop_file'])
+        pars = acquire_params(opts['paramfile'])
 
 
-    float_keys = ['beta', 'mu', 'sigma', 'gamma', 'omega']
-    int_keys = ['start_S', 'start_E', 'start_I', 'start_R', 'duration']
-    str_keys = ['outdir']
-    #validate_params(pars, float_keys, int_keys, str_keys)
+        float_keys = ['beta', 'mu', 'sigma', 'gamma', 'omega']
+        int_keys = ['start_S', 'start_E', 'start_I', 'start_R', 'duration']
+        str_keys = ['outdir']
+        #validate_params(pars, float_keys, int_keys, str_keys)
 
-    # ----- Run model if inputs are valid -----#
+        # ----- Run model if inputs are valid -----#
 
-    seir_model = SEIR(**pars)
-    r = seir_model.integrate()
-    #seir_model.plot_model(r)
+        seir_model = SEIR(**pars)
+        r = seir_model.integrate()
+        #seir_model.plot_model(r)
 
-    data = convert(opts['cases_file'])
+        data = convert(opts['cases_file'])
 
-    dates = data[:,0]
-    new_reported = data[:,3]
+        dates = data[:,0]
+        new_reported = data[:,3]
 
-    seir_model.plot(new_reported)
+        seir_model.plot(new_reported)
 
+    elif opts['mode'] == 'fit':
+        # do the fitting workflow
+    else:
+        raise ValueError(f"invalid mode")
 
     
 
@@ -231,6 +250,7 @@ def main(opts):
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
+    parser.add_argument('--mode', choices=['fit', 'single_run'], default="single_run")
     parser.add_argument('-p', '--paramfile', help='Path to parameters file.',
                         default="./inputs/params_pop_sizes.json")
     parser.add_argument('--pop-file', help='Path to population CSV',
