@@ -92,11 +92,7 @@ class SEIR:
         plt.savefig(os.path.join(self.outdir, 'SEIR_Model.png'))
         plt.show()
 
-    def fit_to_data(self):
-        ##try to fit data
-        x0 = np.array([.9])
-        params = dict()
-        # call to scipy.optimize.least_squares(fun=self.residual, extra_params=params)
+    
 
         
 
@@ -208,15 +204,13 @@ def run_model(x, filename):
     #print(r)
     cases_per_day = r[:,1]
 
-    
-    
     return cases_per_day
 
-def residuals(self, x, y, data, filename):
+def residuals(x, y, filename):
         """Calculates the residual error."""
-        empirical_data = data
+        empirical_data = y
         # call convert function
-        return empirical_data - run_model(self, x, filename)
+        return empirical_data - run_model(x, filename)
 
 def plot(data, outdir):
         time = np.arange(0, len(data))
@@ -227,6 +221,15 @@ def plot(data, outdir):
         plt.plot(time, data)
         plt.savefig(os.path.join(outdir, 'plot.png'))
         plt.show() 
+
+def fit_to_data(data, filename):
+        ##try to fit data
+        x0 = .9
+        
+        # call to scipy.optimize.least_squares(fun=self.residual, extra_params=params)
+        x, flag = scipy.optimize.least_squares(residuals, x0, args = (data, filename))
+
+        return x
 
 def main(opts):
 
@@ -255,17 +258,14 @@ def main(opts):
         ans = run_model(.95, opts['paramfile'])
         print(ans)
 
-        plot(ans, "./outputs")
+        ans2 = fit_to_data(new_reported, opts['paramfile'])
+        print(ans2)
+
+        #plot(ans, "./outputs")
 
         #plot(new_reported, "./outputs")
 
 
-
-
-        
-
-
-        
 
 '''
     elif opts['mode'] == 'fit':
