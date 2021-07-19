@@ -11,6 +11,106 @@ import matplotlib.pyplot as plt
 import os
 import csv
 from scipy.optimize import least_squares
+import pandas as pd
+
+class SEIR:
+
+
+    def __init__(self, beta, mu, sigma, gamma, omega, start_S, start_E, start_I, start_R, duration, outdir):
+
+        self.beta = beta  # transmission rate
+        self.mu = mu  # death/birth rate
+        self.sigma = sigma  # rate E -> I
+        self.gamma = gamma  # recovery rate
+        self.omega = omega  # waning immunity
+        self.start_S = start_S
+        self.start_E = start_E
+        self.start_I = start_I
+        self.start_R = start_R
+        self.duration = duration
+        self.outdir = outdir
+        self.R = [self.start_S, self.start_E, self.start_I, self.start_R]
+        
+
+        if not os.path.isdir(self.outdir):
+            self.outdir = '.'
+
+    def seir(self, x, t):
+
+        S = x[0]
+        E = x[1]
+        I = x[2]
+        R = x[3]
+
+        y = np.zeros(4)
+
+        
+
+
+        y[0] = self.mu - ((((self.beta * I)) * S)) + (self.omega * R) - (self.mu * S)
+        y[1] = ((self.beta * S * I)) - (self.mu + self.sigma) * E
+        y[2] = (self.sigma * E) - (self.mu + self.gamma) * I
+        y[3] = (self.gamma * I) - (self.mu * R) - (self.omega * R)
+
+        return y
+    
+
+    
+    
+    
+
+    def integrate(self):
+
+        time = np.arange(0, self.duration, 0.01)
+        results = scipy.integrate.odeint(self.seir, self.R, time)
+
+        return results
+
+    
+
+
+    def plot_model(self, results):
+
+        time = np.arange(0, len(results[:, 1]))
+
+        fig, axs = plt.subplots(2, 2)
+        axs[0, 0].plot(time, results[:, 0])
+        axs[0, 0].set_title('S')
+        axs[0, 1].plot(time, results[:, 1], 'tab:orange')
+        axs[0, 1].set_title('E')
+        axs[1, 0].plot(time, results[:, 2], 'tab:green')
+        axs[1, 0].set_title('I')
+        axs[1, 1].plot(time, results[:, 3], 'tab:red')
+        axs[1, 1].set_title('R')
+
+        for ax in axs.flat:
+            ax.set(xlabel='Time', ylabel='Population')
+
+        # Hide x labels and tick labels for top plots and y ticks for right plots.
+        for ax in axs.flat:
+            ax.label_outer()
+
+        plt.savefig(os.path.join(self.outdir, 'SEIR_Model.png'))
+        plt.show()
+
+    
+
+        
+
+
+#converts case data into numpy array
+def convert(filename):
+    # First read into csv with pandas
+    df = pd.read_csv(filename)
+
+    data = df.to_numpy()
+
+
+
+    return data
+
+
+
 
 
 
@@ -39,7 +139,6 @@ def get_population(filename):
                     c+=1
                 line_count+=1
 
-    print(population)
     return population
 
 
@@ -86,153 +185,115 @@ def validate_params(param_dict, float_keys, int_keys, str_keys):
 # -- define the system of differential equations
 # ----------------------------------------------------------------------------------------------
 
-class SEIR:
+def run_model(x, filename):
+    file = open(filename, "r")
+    json_object = json.load(file)
+    file.close()
 
-
-    def __init__(self, beta, mu, sigma, gamma, omega, start_S, start_E, start_I, start_R, duration, outdir):
-
-        self.beta = beta  # transmission rate
-        self.mu = mu  # death/birth rate
-        self.sigma = sigma  # rate E -> I
-        self.gamma = gamma  # recovery rate
-        self.omega = omega  # waning immunity
-        self.start_S = start_S
-        self.start_E = start_E
-        self.start_I = start_I
-        self.start_R = start_R
-        self.duration = duration
-        self.outdir = outdir
-        self.R = [self.start_S, self.start_E, self.start_I, self.start_R]
+    json_object["beta"] = x
         
-    @property
-    def results_xr(self) -> xr.DataArray:
-        if hasattr(self, '_results_xr'):
-            return self._results_xr
-        elif hasattr(self, 'results'):
-            assert isinstance(self.results, np.ndarray)
-            # convert to DataArray
-            self._results_xr = xr.DataArray(
-                self.results, dims=('time', 'compartment'),
-                coords=dict(compartment=['S', 'E', 'I', 'R'])
-            )
-            return self._results_xr
-        else:
-            raise TypeError(f"could not find attribute `results`. Please run " + 
-                            "`integrate` method first")
+    file = open(filename, "w")
+    json.dump(json_object, file)
+    file.close()
 
-    def seir(self, x, t):
 
-        S = x[0]
-        E = x[1]
-        I = x[2]
-        R = x[3]
+    pars = acquire_params(filename)
 
-        y = np.zeros(4)
+    seir_model = SEIR(**pars)
+    r = seir_model.integrate()
+    
 
+    #print(r)
+    cases_per_day = r[:,1]
+
+    return cases_per_day
+
+def residuals(x, y, filename):
+        """Calculates the residual error."""
+        empirical_data = y
+        # call convert function
+        return empirical_data - run_model(x, filename)
+
+def plot(data, outdir):
+        time = np.arange(0, len(data))
+
+        plt.title("Cases Over Time") 
+        plt.xlabel("time") 
+        plt.ylabel("cases") 
+        plt.plot(time, data)
+        plt.savefig(os.path.join(outdir, 'plot.png'))
+        plt.show() 
+
+def fit_to_data(data, filename):
+        ##try to fit data
+        x0 = .9
         
+        # call to scipy.optimize.least_squares(fun=self.residual, extra_params=params)
+        x, flag = scipy.optimize.least_squares(residuals, x0, args = (data, filename))
 
-
-        y[0] = self.mu - ((((self.beta * I)) * S)) + (self.omega * R) - (self.mu * S)
-        y[1] = ((self.beta * S * I)) - (self.mu + self.sigma) * E
-        y[2] = (self.sigma * E) - (self.mu + self.gamma) * I
-        y[3] = (self.gamma * I) - (self.mu * R) - (self.omega * R)
-
-        return y
-
-    def integrate(self):
-
-        time = np.arange(0, self.duration, 0.01)
-        self.results = scipy.integrate.odeint(self.seir, self.R, time)
-        return self.results
-
-    def plot_timeseries(self):
-
-        results = self.results
-
-        time = np.arange(0, len(results[:, 1]))
-
-        plt.figure(figsize=(5,8), dpi=300)
-
-        plt.plot(
-            time, results[:, 0], "k",
-            time, results[:, 1], "g",
-            time, results[:, 2], "r",
-            time, results[:, 3], "b",)
-        plt.legend(("S", "E", "I", "R"), loc=0)
-        plt.ylabel("Population Size")
-        plt.xlabel("Time")
-        plt.xticks(rotation=45)
-        plt.title("SEIR Model")
-        plt.savefig(os.path.join(self.outdir, 'SEIR_Model.png'))
-        plt.show()
-
-    def plot(self, results):
-
-        time = np.arange(0, len(results[:, 1]))
-
-        fig, axs = plt.subplots(2, 2)
-        axs[0, 0].plot(time, results[:, 0])
-        axs[0, 0].set_title('S')
-        axs[0, 1].plot(time, results[:, 1], 'tab:orange')
-        axs[0, 1].set_title('E')
-        axs[1, 0].plot(time, results[:, 2], 'tab:green')
-        axs[1, 0].set_title('I')
-        axs[1, 1].plot(time, results[:, 3], 'tab:red')
-        axs[1, 1].set_title('R')
-
-        for ax in axs.flat:
-            ax.set(xlabel='Time', ylabel='Population')
-
-        # Hide x labels and tick labels for top plots and y ticks for right plots.
-        for ax in axs.flat:
-            ax.label_outer()
-
-        plt.savefig(os.path.join(self.outdir, 'SEIR_Model.png'))
-        plt.show()
-
-    def fit_to_data(self):
-        y = np.zeros(4)
-
-        
-
-
-        y[0] = self.mu - ((((self.beta * I)) * S)) + (self.omega * R) - (self.mu * S)
-        y[1] = ((self.beta * S * I)) - (self.mu + self.sigma) * E
-        y[2] = (self.sigma * E) - (self.mu + self.gamma) * I
-        y[3] = (self.gamma * I) - (self.mu * R) - (self.omega * R)
-
-        x0_seir = np.array([2,2,2,2])
-        res_1 = least_squares(self.seir, x0_seir)
-
-        return res1.x
+        return x
 
 def main(opts):
 
     # ----- Load and validate parameters -----#
 
-    pop = get_population("./data/AustinFacts.csv")
-    pars = acquire_params("./inputs/params_pop_sizes.json")
+    if opts['mode'] == 'single_run':
+            
+        pop = get_population(opts['pop_file'])
+
+        file = open(opts['paramfile'], "r")
+        json_object = json.load(file)
+        file.close()
+
+        json_object["start_S"] = pop
+        
+        file = open(opts['paramfile'], "w")
+        json.dump(json_object, file)
+        file.close()
+
+        
+        data = convert(opts['cases_file'])
+
+        dates = data[:,0]
+        new_reported = data[:,3]
+
+        ans = run_model(.95, opts['paramfile'])
+        print(ans)
+
+        ans2 = fit_to_data(new_reported, opts['paramfile'])
+        print(ans2)
+
+        #plot(ans, "./outputs")
+
+        #plot(new_reported, "./outputs")
 
 
-    print(pop)
 
+'''
+    elif opts['mode'] == 'fit':
+        # do the fitting workflow
+    else:
+        raise ValueError(f"invalid mode")
 
-    float_keys = ['beta', 'mu', 'sigma', 'gamma', 'omega']
-    int_keys = ['start_S', 'start_E', 'start_I', 'start_R', 'duration']
-    str_keys = ['outdir']
-    #validate_params(pars, float_keys, int_keys, str_keys)
+'''
 
-    # ----- Run model if inputs are valid -----#
+    
 
-    seir_model = SEIR(**pars)
-    r = seir_model.integrate()
-    seir_model.plot(r)
 
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('-p', '--paramfile', help='Path to parameters file.')
+    parser.add_argument('--mode', choices=['fit', 'single_run'], default="single_run")
+    parser.add_argument('-p', '--paramfile', help='Path to parameters file.',
+                        default="./inputs/params_pop_sizes.json")
+    parser.add_argument('--pop-file', help='Path to population CSV',
+                        default="./data/AustinFacts.csv")
+    parser.add_argument('--cases-file', help='Path to cases CSV (Johns Hopkins formatting)', 
+                        default="./data/Austin_Travis_County_COVID19_Daily_Counts_(Public_View).csv")
 
-    opts = parser.parse_args()
+
+
+
+    opts = vars(parser.parse_args())
 
     main(opts)
