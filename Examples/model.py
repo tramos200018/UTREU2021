@@ -95,8 +95,6 @@ class SEIR:
 
     
 
-        
-
 
 #converts case data into numpy array
 def convert(filename):
@@ -186,22 +184,33 @@ def validate_params(param_dict, float_keys, int_keys, str_keys):
 # ----------------------------------------------------------------------------------------------
 
 def run_model(x, filename):
+
+    '''
     file = open(filename, "r")
     json_object = json.load(file)
     file.close()
 
-    json_object["beta"] = x
+    json_object["beta"] = list(x)
         
+    print(f'{json_object} is type {type(json_object)}')
+
     file = open(filename, "w")
     json.dump(json_object, file)
     file.close()
-
+    '''
 
     pars = acquire_params(filename)
+    # edit pars here
+
+    # pars["beta"] = list(x)
+    pars["beta"] = np.array([x])
+
+
 
     seir_model = SEIR(**pars)
     r = seir_model.integrate()
     
+    # try plotting here
 
     #print(r)
     cases_per_day = r[:,1]
@@ -225,13 +234,30 @@ def plot(data, outdir):
         plt.savefig(os.path.join(outdir, 'plot.png'))
         plt.show() 
 
+
+##over here
+
+
 def fit_to_data(data, filename):
         ##try to fit data
-        x0 = .9
-        
-        # call to scipy.optimize.least_squares(fun=self.residual, extra_params=params)
-        x, flag = scipy.optimize.least_squares(residuals, list(x0), args = (data, filename))
+        x0 = [1.1]
 
+        '''
+        # DEBUG
+        print(f'{residuals} is type {type(residuals)}')
+        print(f'{x0} is type {type(x0)}')
+        print(f'{data} is type {type(data)}')
+        print(f'{filename} is type {type(filename)}')
+        '''
+        # call to scipy.optimize.least_squares(fun=self.residual, extra_params=params)
+        x = scipy.optimize.least_squares(residuals, x0, args = (data, filename))
+        
+        '''
+        # DEBUG
+        print(f'{x} is type {type(x)}')
+        '''
+        
+        
         return x
 
 def main(opts):
@@ -262,7 +288,7 @@ def main(opts):
         #print(ans)
 
         ans2 = fit_to_data(list(new_reported), opts['paramfile'])
-        #print(ans2)
+        print(ans2.x)
 
         #plot(ans, "./outputs")
 
