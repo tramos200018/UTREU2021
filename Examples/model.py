@@ -211,6 +211,7 @@ def run_model(x, filename):
 def residuals(x, y, filename):
         """Calculates the residual error."""
         empirical_data = y
+        #print(x)
         # call convert function
         return empirical_data - run_model(x, filename)
 
@@ -229,7 +230,7 @@ def fit_to_data(data, filename):
         x0 = .9
         
         # call to scipy.optimize.least_squares(fun=self.residual, extra_params=params)
-        x, flag = scipy.optimize.least_squares(residuals, x0, args = (data, filename))
+        x, flag = scipy.optimize.least_squares(residuals, list(x0), args = (data, filename))
 
         return x
 
@@ -258,10 +259,10 @@ def main(opts):
         new_reported = data[:,3]
 
         ans = run_model(.95, opts['paramfile'])
-        print(ans)
+        #print(ans)
 
-        ans2 = fit_to_data(new_reported, opts['paramfile'])
-        print(ans2)
+        ans2 = fit_to_data(list(new_reported), opts['paramfile'])
+        #print(ans2)
 
         #plot(ans, "./outputs")
 
