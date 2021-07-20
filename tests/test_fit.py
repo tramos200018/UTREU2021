@@ -13,11 +13,12 @@ def test_run_model():
     pass
 
 
-def test_main():
+def test_main_fit():
     opts = dict(
         paramfile='tests/data/params_pop_sizes.json',
         cases_file='tests/data/Austin_Travis_County_COVID19_Daily_Counts_(Public_View).csv',
-        pop_file='tests/data/AustinFacts.csv'
+        pop_file='tests/data/AustinFacts.csv',
+        mode='single_run'
     )
     main(opts)
 
