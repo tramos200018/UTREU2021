@@ -116,6 +116,7 @@ def get_population(filename):
 
     population = 0
 
+    vac = 442847
 
     with open(filename) as csv_file:
         csv_reader = csv.reader(csv_file, delimiter=',')
@@ -126,7 +127,7 @@ def get_population(filename):
     
         for row in csv_reader:
             
-            if c<2:
+            if c<1:
                 if line_count == 0:
                     #first row
                     line_count += 1
@@ -136,7 +137,7 @@ def get_population(filename):
                     c+=1
                 line_count+=1
 
-    return population
+    return int(population) - vac
 
 
 
@@ -211,7 +212,7 @@ def run_model(x, filename):
     # try plotting here
 
     #print(r)
-    cases_per_day = r[:,1]
+    cases_per_day = r[:,2]
 
     return cases_per_day
 
@@ -238,7 +239,7 @@ def plot(data, outdir):
 
 def fit_to_data(data, filename):
         ##try to fit data
-        x0 = [1.1]
+        x0 = [.5]
 
         '''
         # DEBUG
@@ -282,13 +283,13 @@ def main(opts):
         dates = data[:,0]
         new_reported = data[:,3]
 
-        ans = run_model(.95, opts['paramfile'])
-        #print(ans)
+        ans = run_model(.5, opts['paramfile'])
+        print(ans)
 
         ans2 = fit_to_data(list(new_reported), opts['paramfile'])
-        print(ans2.x)
+        print(ans2)
 
-        #plot(ans, "./outputs")
+        plot(ans, "./outputs")
 
         #plot(new_reported, "./outputs")
 
