@@ -184,19 +184,7 @@ def validate_params(param_dict, float_keys, int_keys, str_keys):
 
 def run_model(x, filename):
 
-    '''
-    file = open(filename, "r")
-    json_object = json.load(file)
-    file.close()
-
-    json_object["beta"] = list(x)
-        
-    print(f'{json_object} is type {type(json_object)}')
-
-    file = open(filename, "w")
-    json.dump(json_object, file)
-    file.close()
-    '''
+    
 
     pars = acquire_params(filename)
     # edit pars here
@@ -212,16 +200,19 @@ def run_model(x, filename):
     # try plotting here
 
     #print(r)
-    cases_per_day = r[:,2]
+    cases_reported = r[:,2]
 
-    return cases_per_day
+    return cases_reported
 
 def residuals(x, y, filename):
         """Calculates the residual error."""
         empirical_data = y
         #print(x)
         # call convert function
-        return empirical_data - run_model(x, filename)
+
+        ans = empirical_data - run_model(x, filename)
+        print(ans)
+        return ans
 
 def plot(data, outdir):
         time = np.arange(0, len(data))
@@ -239,7 +230,7 @@ def plot(data, outdir):
 
 def fit_to_data(data, filename):
         ##try to fit data
-        x0 = [.5]
+        x0 = [.1]
 
         '''
         # DEBUG
@@ -265,31 +256,26 @@ def main(opts):
 
     if opts['mode'] == 'single_run':
             
-        pop = get_population(opts['pop_file'])
-
-        file = open(opts['paramfile'], "r")
-        json_object = json.load(file)
-        file.close()
-
-        json_object["start_S"] = pop
         
-        file = open(opts['paramfile'], "w")
-        json.dump(json_object, file)
-        file.close()
 
         
         data = convert(opts['cases_file'])
 
         dates = data[:,0]
-        new_reported = data[:,3]
+        cases_reported = data[:,2]
 
-        ans = run_model(.5, opts['paramfile'])
-        print(ans)
+        #print(cases_reported)
 
-        ans2 = fit_to_data(list(new_reported), opts['paramfile'])
-        print(ans2)
+        model_ran = run_model(0.0000205, opts['paramfile'])
+        #print(model_ran)
 
-        plot(ans, "./outputs")
+        #print(ans)
+
+        fit_result = fit_to_data(list(cases_reported), opts['paramfile'])
+        assert fit_result.success, f"least_squares failed to converge: {fit_result}"
+        ans_with_fitted_beta = run_model(fit_result.x[0], opts['paramfile'])
+        print(fit_result.x)
+        plot(ans_with_fitted_beta, "./outputs")
 
         #plot(new_reported, "./outputs")
 
