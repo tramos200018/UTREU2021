@@ -1,4 +1,4 @@
-#Model imported from https://github.com/UT-Covid/SEIR_Example
+#Model imported from t
 
 
 import numpy as np
@@ -196,6 +196,7 @@ def run_model(x, filename):
 
     seir_model = SEIR(**pars)
     r = seir_model.integrate()
+    #seir_model.plot_model(r)
     
     # try plotting here
 
@@ -210,8 +211,8 @@ def residuals(x, y, filename):
         #print(x)
         # call convert function
 
-        ans = empirical_data - run_model(x, filename)
-        print(ans)
+        ans = (empirical_data - run_model(x, filename))/empirical_data * 100
+        #print(ans)
         return ans
 
 def plot(data, outdir):
@@ -264,18 +265,19 @@ def main(opts):
         dates = data[:,0]
         cases_reported = data[:,2]
 
-        #print(cases_reported)
+        print(cases_reported)
 
-        model_ran = run_model(0.0000205, opts['paramfile'])
-        #print(model_ran)
+        model_ran = run_model(0.00000525, opts['paramfile'])
+        print(model_ran)
 
         #print(ans)
 
         fit_result = fit_to_data(list(cases_reported), opts['paramfile'])
         assert fit_result.success, f"least_squares failed to converge: {fit_result}"
-        ans_with_fitted_beta = run_model(fit_result.x[0], opts['paramfile'])
+        #ans_with_fitted_beta = run_model(fit_result.x[0], opts['paramfile'])
         print(fit_result.x)
-        plot(ans_with_fitted_beta, "./outputs")
+        optimal_betta = .0000105
+        #plot(model_ran, "./outputs")
 
         #plot(new_reported, "./outputs")
 

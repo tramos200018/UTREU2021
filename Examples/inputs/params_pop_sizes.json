@@ -1,1 +1,1 @@
-{"mu": 0.0, "sigma": 0.0354, "beta": 0.0000205, "gamma": 0.001, "omega": 0.0, "start_S": 381674, "start_E": 80000, "start_I": 74387, "start_R": 0, "duration": 1.54, "outdir": "./outputs"}
+{"mu": 0.0, "sigma": 0.0354, "beta": 0.00000525, "gamma": 0.001, "omega": 0.0, "start_S": 381382, "start_E": 80000, "start_I": 74387, "start_R": 272, "duration": 1.54, "outdir": "./outputs"}
